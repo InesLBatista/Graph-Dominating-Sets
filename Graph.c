@@ -257,9 +257,10 @@ Graph* GraphFromFile(FILE* f) {
 // If the set contains all the graph vertices, it is a copy of the given graph
 //
 Graph* GraphGetSubgraph(const Graph* g, IndicesSet* vertSet) {
+  // Verificar pré-condição: vertSet deve ser subconjunto dos vértices de g
   assert(IndicesSetIsSubset(vertSet, g->verticesSet));
 
-  // Criar grafo vazio com mesmo range e propriedades
+  // Criar grafo vazio com as mesmas propriedades do original
   Graph* new = GraphCreateEmpty(g->indicesRange, g->isDigraph, g->isWeighted);
 
   //
@@ -271,8 +272,92 @@ Graph* GraphGetSubgraph(const Graph* g, IndicesSet* vertSet) {
   //        - Adicionar aresta (u,v) ao novo grafo
   //
 
-  GraphCheckInvariants(new);
 
+  // Esta lista contém todos os vértices que existem no grafo g
+  List* vertices = g->verticesList;
+
+  // Adicionar vértices que estão em vertSet
+  // Verificar se o grafo original tem vértices (pode estar vazio)
+  if (!ListIsEmpty(vertices)) {
+    // Posicionar o iterador no primeiro vértice da lista
+    ListMoveToHead(vertices);
+    
+    // Percorrer todos os vértices do grafo original
+    for (int i = 0; i < ListGetSize(vertices); i++) {
+      // Obter a estrutura do vértice atual
+      struct _Vertex* vert = ListGetCurrentItem(vertices);
+      
+      // Verificar se este vértice está no conjunto vertSet
+      if (IndicesSetContains(vertSet, vert->id)) {
+        // Se está, adicionar este vértice ao novo grafo
+        GraphAddVertex(new, vert->id);
+      }
+      
+      // Avançar para o próximo vértice na lista
+      ListMoveToNext(vertices);
+    }
+  }
+  
+
+
+  // Adicionar arestas entre vértices do subgrafo
+  // Resetar o iterador para o início da lista
+  // Verificar novamente se a lista não está vazia antes de mover o iterador. O iterador pode estar no final da lista após a fase 1
+  if (!ListIsEmpty(vertices)) {
+    // Reposicionar o iterador no primeiro vértice para iniciar a segunda passagem
+    ListMoveToHead(vertices);
+    
+    // Percorrer todos os vértices novamente
+    for (int i = 0; i < ListGetSize(vertices); i++) {
+      // Obter a estrutura do vértice atual
+      struct _Vertex* vert = ListGetCurrentItem(vertices);
+      
+      // Só processar este vértice se ele estiver no subgrafo (em vertSet)
+      if (IndicesSetContains(vertSet, vert->id)) {
+        // Obter a lista de arestas incidentes a este vértice
+        List* edges = vert->edgesList;
+        
+        // Verificar se o vértice tem arestas
+        if (!ListIsEmpty(edges)) {
+          // Posicionar o iterador na primeira aresta da lista
+          ListMoveToHead(edges);
+          
+          // Percorrer todas as arestas do vértice atual
+          for (int j = 0; j < ListGetSize(edges); j++) {
+            // Obter a estrutura da aresta atual
+            struct _Edge* edge = (struct _Edge*)ListGetCurrentItem(edges);
+            
+            // Verificar se o vértice adjacente também está no conjunto vertSet
+            if (IndicesSetContains(vertSet, edge->adjVertex)) {
+              // Ambos os vértices estão no subgrafo, adicionar a aresta
+              
+              // Escolher a função apropriada baseada no tipo de grafo (ponderado ou não)
+              if (g->isWeighted) {
+                // Grafo ponderado: usar GraphAddWeightedEdge com o peso original
+                GraphAddWeightedEdge(new, vert->id, edge->adjVertex, edge->weight);
+              } else {
+                // Grafo não-ponderado: usar GraphAddEdge (peso padrão 1.0)
+                GraphAddEdge(new, vert->id, edge->adjVertex);
+              }
+            }
+            
+            // Avançar para a próxima aresta na lista
+            ListMoveToNext(edges);
+          }
+        }
+      }
+      
+      // Avançar para o próximo vértice na lista
+      ListMoveToNext(vertices);
+    }
+  }
+
+  // Verificar os invariantes do novo grafo para garantir que está bem formado
+  // Esta função deteta erros como contagens inconsistentes de vértices/arestas
+  GraphCheckInvariants(new);
+  
+  // Retornar o novo subgrafo
+  // O caller é responsável por destruir este grafo quando não precisar mais dele
   return new;
 }
 
