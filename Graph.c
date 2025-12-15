@@ -452,10 +452,14 @@ IndicesSet* GraphGetSetAdjacentsTo(const Graph* g, unsigned int v) {
 // The weight of a vertex is the sum of the weights of its edges
 // If edges have no weights, the weight of a vertex is its degree
 double* GraphComputeVertexWeights(const Graph* g) {
+  // Alocar memória para o array de pesos
+  // O array tem tamanho igual ao range do grafo (0 a indicesRange-1)
   double* weightsArray = malloc(g->indicesRange * sizeof(double));
+  // Verificar se a alocação foi bem-sucedida
   if (weightsArray == NULL) abort();
 
-  // Inicializar com -1.0 (vértice não existe)
+  // Inicializar todos os elementos do array com -1.0
+  // -1.0 indica que o vértice correspondente não existe no grafo
   for (unsigned int v = 0; v < g->indicesRange; v++) {
     weightsArray[v] = -1.0;
   }
@@ -467,6 +471,69 @@ double* GraphComputeVertexWeights(const Graph* g) {
   // 2. Se grafo não é ponderado: peso = grau do vértice
   //
 
+  // Obter a lista de vértices do grafo
+  // Esta lista contém apenas os vértices que realmente existem no grafo
+  List* vertices = g->verticesList;
+  
+  // Verificar se o grafo tem vértices (pode estar vazio)
+  if (!ListIsEmpty(vertices)) {
+    // Posicionar o iterador no primeiro vértice da lista
+    ListMoveToHead(vertices);
+    
+    // Percorrer todos os vértices da lista
+    // ListGetSize retorna o número de vértices no grafo (numVertices)
+    for (int vertexIndex = 0; vertexIndex < ListGetSize(vertices); vertexIndex++) {
+      // Obter a estrutura do vértice atual
+      struct _Vertex* currentVertex = ListGetCurrentItem(vertices);
+      
+      // Variável para acumular o peso total do vértice
+      double vertexTotalWeight = 0.0;
+
+      // Obter a lista de arestas incidentes ao vértice atual
+      // Cada elemento desta lista é uma estrutura _Edge
+      List* incidentEdges = currentVertex->edgesList;
+      
+      // Verificar se o vértice tem arestas incidentes
+      // Evita operações desnecessárias em vértices isolados
+      if (!ListIsEmpty(incidentEdges)) {
+        // Posicionar o iterador na primeira aresta da lista
+        ListMoveToHead(incidentEdges);
+        
+        // Percorrer todas as arestas incidentes ao vértice
+        for (int edgeIndex = 0; edgeIndex < ListGetSize(incidentEdges); edgeIndex++) {
+          // Obter a estrutura da aresta atual
+          struct _Edge* currentEdge = (struct _Edge*)ListGetCurrentItem(incidentEdges);
+          
+          // Calcular contribuição da aresta atual para o peso do vértice
+          if (g->isWeighted) {
+            // Caso 1: Grafo Ponderado
+            // O peso do vértice é a soma dos pesos de todas as suas arestas
+            // Cada aresta contribui com seu peso específico (edge->weight)
+            vertexTotalWeight += currentEdge->weight;
+          } else {
+            // Caso 2: Grafo Não-Ponderado
+            // O peso do vértice é igual ao seu grau (número de arestas incidentes)
+            // Cada aresta contribui com 1 unidade ao peso do vértice
+            // Isto está de acordo com a especificação do trabalho: "If edges have no weights, the weight of a vertex is its degree"
+            vertexTotalWeight += 1.0;
+          }
+          
+          // Avançar para a próxima aresta na lista
+          ListMoveToNext(incidentEdges);
+        }
+      }
+
+      // Armazenar o peso calculado no array de resultados
+      // Usar o ID do vértice como índice no array
+      // Isto permite acesso direto: weightsArray[vertexID] retorna o peso
+      weightsArray[currentVertex->id] = vertexTotalWeight;
+      
+      // Avançar para o próximo vértice na lista
+      ListMoveToNext(vertices);
+    }
+  }
+  // Retornar o array de pesos
+  // O caller é responsável por libertar esta memória com free()
   return weightsArray;
 }
 
