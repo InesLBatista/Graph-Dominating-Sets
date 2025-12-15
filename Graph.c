@@ -7,10 +7,10 @@
 // Graph - Using a list of adjacency lists representation
 //
 
-// Student Name :
-// Student Number :
-// Student Name :
-// Student Number :
+// Student Name : Inês Simões Batista
+// Student Number : 124877
+// Student Name : Maria Clara da Fonseca Silva Vaz Quinteiro
+// Student Number : 124996
 
 /*** COMPLETE THE GraphGetSetAdjacentsTo FUNCTION */
 /*** COMPLETE THE GraphComputeVertexWeights FUNCTION ***/
@@ -259,11 +259,16 @@ Graph* GraphFromFile(FILE* f) {
 Graph* GraphGetSubgraph(const Graph* g, IndicesSet* vertSet) {
   assert(IndicesSetIsSubset(vertSet, g->verticesSet));
 
-  // The "empty" subgraph
+  // Criar grafo vazio com mesmo range e propriedades
   Graph* new = GraphCreateEmpty(g->indicesRange, g->isDigraph, g->isWeighted);
 
   //
   // TO BE COMPLETED
+  // 1. Adicionar vértices do vertSet ao novo grafo
+  // 2. Para cada vértice u em vertSet:
+  //    - Para cada aresta (u,v) no grafo original:
+  //      - Se v também está em vertSet:
+  //        - Adicionar aresta (u,v) ao novo grafo
   //
 
   GraphCheckInvariants(new);
@@ -373,16 +378,68 @@ IndicesSet* GraphGetSetVertices(const Graph* g) {
 // as a set of vertex indices
 //
 IndicesSet* GraphGetSetAdjacentsTo(const Graph* g, unsigned int v) {
+  // Verificar que o vértice v pertence ao conjunto de vértices do grafo. Esta verificação é importante porque o grafo pode não ter todos os vértices no range
   assert(IndicesSetContains(g->verticesSet, (uint16_t)v));
 
+  // Criar um conjunto vazio para armazenar os vértices adjacentes
+  // O conjunto tem o mesmo range do grafo original
   IndicesSet* adjacents_set = IndicesSetCreateEmpty(g->indicesRange);
 
   //
   // TO BE COMPLETED
+  // 1. Encontrar o vértice v na verticesList
+  // 2. Percorrer sua edgesList
+  // 3. Para cada edge, adicionar edge->adjVertex ao adjacents_set
   //
 
+
+  // Criar uma estrutura temporária para procurar o vértice v na lista de vértices
+  // Esta estrutura só precisa do campo id para a busca
+  struct _Vertex search_param;
+  search_param.id = v;
+  
+  // Procurar o vértice v na lista de vértices do grafo
+  // A função ListSearch posiciona o iterador no nó encontrado
+  ListSearch(g->verticesList, (void*)(&search_param));
+  
+  // Obter o ponteiro para a estrutura do vértice encontrado
+  // Agora temos acesso a todos os campos do vértice, incluindo sua lista de arestas
+  struct _Vertex* vertex = ListGetCurrentItem(g->verticesList);
+  
+  // Obter a lista de arestas do vértice v
+  // Cada elemento desta lista é uma estrutura _Edge
+  List* edges = vertex->edgesList;
+  
+  // Verificar se o vértice tem arestas adjacentes
+  // Esta verificação evita operações desnecessárias em listas vazias
+  if (!ListIsEmpty(edges)) {
+    // Posicionar o iterador no primeiro elemento da lista de arestas
+    // É necessário porque operações anteriores podem ter alterado a posição do iterador
+    ListMoveToHead(edges);
+    
+    // Percorrer todas as arestas da lista
+    // ListGetSize devolve o número atual de elementos na lista
+    for (int i = 0; i < ListGetSize(edges); i++) {
+      // Obter a estrutura da aresta atual
+      // ListGetCurrentItem devolve um void* que precisamos converter para struct _Edge*
+      struct _Edge* edge = (struct _Edge*)ListGetCurrentItem(edges);
+      
+      // Adicionar o vértice adjacente ao conjunto
+      // edge->adjVertex contém o índice do vértice conectado por esta aresta
+      IndicesSetAdd(adjacents_set, edge->adjVertex);
+      
+      // Avançar para a próxima aresta na lista
+      // Esta chamada atualiza o iterador interno da lista
+      ListMoveToNext(edges);
+    }
+  }
+
+
+  // Retornar o conjunto de vértices adjacentes
+  // O caller é responsável por destruir este conjunto quando não precisar mais dele
   return adjacents_set;
 }
+
 
 //
 // TO BE COMPLETED
@@ -398,13 +455,16 @@ double* GraphComputeVertexWeights(const Graph* g) {
   double* weightsArray = malloc(g->indicesRange * sizeof(double));
   if (weightsArray == NULL) abort();
 
-  // Fill with -1 to signal no vertex
+  // Inicializar com -1.0 (vértice não existe)
   for (unsigned int v = 0; v < g->indicesRange; v++) {
     weightsArray[v] = -1.0;
   }
 
   //
   // TO BE COMPLETED
+  // Para cada vértice no grafo:
+  // 1. Se grafo é ponderado: peso = soma dos pesos das arestas
+  // 2. Se grafo não é ponderado: peso = grau do vértice
   //
 
   return weightsArray;
