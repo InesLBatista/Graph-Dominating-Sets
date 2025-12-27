@@ -1,5 +1,6 @@
 # Graph Dominating Sets
-**Date:** 2025-12-27
+**Date:** 2025-12-27<br>
+<br>
 This project focuses on implementing and extending the Graph Abstract Data Type (ADT) and developing algorithms to determine Vertex Dominating Sets in undirected graphs.
 The work explores adjacency list-based graph representation, manipulation of index sets (IndicesSet), and exhaustive search algorithms for combinatorial optimization.
 
