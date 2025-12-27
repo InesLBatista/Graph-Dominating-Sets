@@ -5,7 +5,7 @@
 
 CFLAGS += -g -Wall -Wextra
 
-TARGETS = TestDominatingSets TestGraphBasics TestIndicesSet
+TARGETS = TestDominatingSets TestGraphBasics TestIndicesSet TestAdditional
 
 all: $(TARGETS)
 
@@ -17,6 +17,9 @@ TestGraphBasics: TestGraphBasics.o Graph.o SortedList.o \
   IndicesSet.o instrumentation.o
 
 TestIndicesSet: TestIndicesSet.o IndicesSet.o instrumentation.o
+
+TestAdditional: TestAdditional.o Graph.o GraphDominatingSets.o SortedList.o \
+  IndicesSet.o instrumentation.o
 
 # Dependencies of source files
 
@@ -39,6 +42,9 @@ TestDominatingSets.o: TestDominatingSets.c Graph.h GraphDominatingSets.h \
 TestGraphBasics.o: TestGraphBasics.c Graph.h IndicesSet.h instrumentation.h 
 
 TestIndicesSet.o: TestIndicesSet.c IndicesSet.h instrumentation.h
+
+TestAdditional.o: TestAdditional.c Graph.h GraphDominatingSets.h \
+  IndicesSet.h instrumentation.h
 
 clean:
 	rm -f *.o

@@ -39,6 +39,47 @@
 // no conjunto vertSet e E é o número total de arestas no grafo.
 // Cada vértice no conjunto requer a obtenção dos seus adjacentes.
 //
+
+
+
+// Função estática que devolve um array com os elementos de um IndicesSet
+// Retorna um ponteiro para unsigned int ou NULL se o conjunto estiver vazio
+static unsigned int* _getElems(IndicesSet* set) {
+
+  // Obtém o número de elementos presentes no conjunto
+  unsigned int num = IndicesSetGetNumElems(set);
+
+  // Se não houver elementos, retorna NULL
+  if (num == 0) return NULL;
+
+  // Aloca memória para um array com 'num' elementos do tipo unsigned int
+  unsigned int* elems = (unsigned int*)malloc(num * sizeof(unsigned int));
+
+  // Garante que a alocação de memória foi bem-sucedida
+  assert(elems != NULL);
+  
+  // Obtém o primeiro elemento do conjunto
+  int v = IndicesSetGetFirstElem(set);
+
+  // Índice usado para percorrer o array 'elems'
+  unsigned int i = 0;
+
+  // Percorre o conjunto enquanto houver elementos válidos e enquanto não ultrapassar o número esperado de elementos
+  while (v != -1 && i < num) {
+
+    // Guarda o elemento atual no array
+    elems[i++] = (unsigned int)v;
+
+    // Obtém o próximo elemento do conjunto
+    v = IndicesSetGetNextElem(set);
+  }
+
+  // Retorna o array com os elementos do conjunto
+  return elems;
+}
+
+
+
 int GraphIsDominatingSet(const Graph* g, IndicesSet* vertSet) {
   // Verificação de pré-condições:
   // 1. O ponteiro para o grafo deve ser válido (não NULL)
@@ -62,7 +103,7 @@ int GraphIsDominatingSet(const Graph* g, IndicesSet* vertSet) {
   IndicesSet* dominated = IndicesSetCreateCopy(vertSet);
   
   // Para calcular eficientemente os vértices dominados, precisamos de iterar sobre todos os vértices em vertSet. Para isso, obtemos um array com os elementos do conjunto.
-  unsigned int* vertices = IndicesSetGetElems(vertSet);
+  unsigned int* vertices = _getElems(vertSet);
   unsigned int numVertices = IndicesSetGetNumElems(vertSet);
   
   // Para cada vértice no conjunto vertSet, vamos determinar quais são os vértices que ele domina. Um vértice v domina todos os seus vértices adjacentes.
@@ -138,10 +179,11 @@ static void _searchMinDominatingSet(SearchContext* ctx, IndicesSet* currentSet,
             ctx->bestSize = currentSize;
             
             // Limpar o conjunto bestSet anterior para receber o novo melhor
-            IndicesSetClear(ctx->bestSet);
+            IndicesSetDestroy(&(ctx->bestSet));
+            ctx->bestSet = IndicesSetCreateEmpty(GraphGetVertexRange(ctx->graph));
             
             // Obter os elementos do conjunto atual
-            unsigned int* elems = IndicesSetGetElems(currentSet);
+            unsigned int* elems = _getElems(currentSet);
             
             // Adicionar todos os elementos do conjunto atual ao bestSet
             for (unsigned int i = 0; i < currentSize; i++) {
@@ -203,7 +245,7 @@ IndicesSet* GraphComputeMinDominatingSet(const Graph* g) {
   
   // Obter um array com os vértices e o seu número total.
   // Esta representação é mais eficiente para iteração do que trabalhar diretamente com a estrutura IndicesSet.
-  unsigned int* vertices = IndicesSetGetElems(allVertices);
+  unsigned int* vertices = _getElems(allVertices);
   unsigned int numVertices = IndicesSetGetNumElems(allVertices);
   
   // Criar o conjunto que irá armazenar o melhor resultado encontrado.
@@ -229,6 +271,7 @@ IndicesSet* GraphComputeMinDominatingSet(const Graph* g) {
   
   // Após a procura, atualizar a variável local bestSize com o valor encontrado pela função recursiva (que pode ter sido modificado no contexto).
   bestSize = ctx.bestSize;
+  bestSet = ctx.bestSet;
   
   // Caso especial: se a procura não encontrou nenhum conjunto dominante (o que só acontece se numVertices == 0 ou se há um bug no algoritmo), usamos todos os vértices como fallback. Tecnicamente, o conjunto de todos os vértices é sempre um conjunto dominante válido.
   if (IndicesSetIsEmpty(bestSet) && numVertices > 0) {
@@ -288,8 +331,9 @@ static void _searchMinWeightDominatingSet(WeightSearchContext* ctx,
             ctx->bestWeight = currentWeight;
             
             // Atualizar o melhor conjunto
-            IndicesSetClear(ctx->bestSet);
-            unsigned int* elems = IndicesSetGetElems(currentSet);
+            IndicesSetDestroy(&(ctx->bestSet));
+            ctx->bestSet = IndicesSetCreateEmpty(GraphGetVertexRange(ctx->graph));
+            unsigned int* elems = _getElems(currentSet);
             unsigned int size = IndicesSetGetNumElems(currentSet);
             for (unsigned int i = 0; i < size; i++) {
                 IndicesSetAdd(ctx->bestSet, elems[i]);
@@ -349,7 +393,7 @@ IndicesSet* GraphComputeMinWeightDominatingSet(const Graph* g) {
   
   // Obter todos os vértices que existem no grafo (como na função anterior)
   IndicesSet* allVertices = GraphGetSetVertices(g);
-  unsigned int* vertices = IndicesSetGetElems(allVertices);
+  unsigned int* vertices = _getElems(allVertices);
   unsigned int numVertices = IndicesSetGetNumElems(allVertices);
   
   // Inicializar o melhor conjunto (vazio) e o melhor peso.
@@ -374,6 +418,7 @@ IndicesSet* GraphComputeMinWeightDominatingSet(const Graph* g) {
   
   // Atualizar o melhor peso encontrado
   bestWeight = ctx.bestWeight;
+  bestSet = ctx.bestSet;
   
   // Caso especial: se não foi encontrado nenhum conjunto dominante (o que só deve acontecer para grafos sem vértices ou com erro), usar todos os vértices como fallback.
   if (IndicesSetIsEmpty(bestSet) && numVertices > 0) {
