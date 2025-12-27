@@ -162,6 +162,7 @@ typedef struct {
 
 static void _searchMinDominatingSet(SearchContext* ctx, IndicesSet* currentSet, 
                                     unsigned int startIdx) {
+    InstrCount[0]++; // Count recursive calls
     // Obter o tamanho atual do conjunto sendo explorado.
     unsigned int currentSize = IndicesSetGetNumElems(currentSet);
     
@@ -316,6 +317,7 @@ static void _searchMinWeightDominatingSet(WeightSearchContext* ctx,
                                           IndicesSet* currentSet, 
                                           unsigned int startIdx, 
                                           double currentWeight) {
+    InstrCount[1]++; // Count recursive calls
     // Poda por peso: se o peso acumulado do conjunto atual já é maior ou igual ao melhor peso encontrado até agora, não vale a pena continuar a explorar este ramo. Esta poda é fundamental para a eficiência.
     if (currentWeight >= ctx->bestWeight) {
         return;  // Podar este ramo da árvore de busca
