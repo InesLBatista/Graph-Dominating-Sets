@@ -329,15 +329,19 @@ Graph* GraphGetSubgraph(const Graph* g, IndicesSet* vertSet) {
             
             // Verificar se o vértice adjacente também está no conjunto vertSet
             if (IndicesSetContains(vertSet, edge->adjVertex)) {
-              // Ambos os vértices estão no subgrafo, adicionar a aresta
+              // Ambos os vértices estão no subgrafo
               
-              // Escolher a função apropriada baseada no tipo de grafo (ponderado ou não)
-              if (g->isWeighted) {
-                // Grafo ponderado: usar GraphAddWeightedEdge com o peso original
-                GraphAddWeightedEdge(new, vert->id, edge->adjVertex, edge->weight);
-              } else {
-                // Grafo não-ponderado: usar GraphAddEdge (peso padrão 1.0)
-                GraphAddEdge(new, vert->id, edge->adjVertex);
+              // Para grafos não-direcionados: garantir que cada aresta é adicionada apenas uma vez. Adicionar apenas se vert->id <= edge->adjVertex (evita duplicação)
+              // Para grafos direcionados: adicionar todas as arestas
+              if (g->isDigraph || vert->id <= edge->adjVertex) {
+                // Escolher a função apropriada baseada no tipo de grafo (ponderado ou não)
+                if (g->isWeighted) {
+                  // Grafo ponderado: usar GraphAddWeightedEdge com o peso original
+                  GraphAddWeightedEdge(new, vert->id, edge->adjVertex, edge->weight);
+                } else {
+                  // Grafo não-ponderado: usar GraphAddEdge (peso padrão 1.0)
+                  GraphAddEdge(new, vert->id, edge->adjVertex);
+                }
               }
             }
             
@@ -491,8 +495,7 @@ IndicesSet* GraphGetSetAdjacentsTo(const Graph* g, unsigned int v) {
   // Agora temos acesso a todos os campos do vértice, incluindo sua lista de arestas
   struct _Vertex* vertex = ListGetCurrentItem(g->verticesList);
   
-  // Obter a lista de arestas do vértice v
-  // Cada elemento desta lista é uma estrutura _Edge
+  // Obter a lista de arestas do vértice v. Cada elemento desta lista é uma estrutura _Edge
   List* edges = vertex->edgesList;
   
   // Verificar se o vértice tem arestas adjacentes
@@ -537,6 +540,9 @@ IndicesSet* GraphGetSetAdjacentsTo(const Graph* g, unsigned int v) {
 // The weight of a vertex is the sum of the weights of its edges
 // If edges have no weights, the weight of a vertex is its degree
 double* GraphComputeVertexWeights(const Graph* g) {
+
+  assert(g->isDigraph == 0);
+
   // Alocar memória para o array de pesos
   // O array tem tamanho igual ao range do grafo (0 a indicesRange-1)
   double* weightsArray = malloc(g->indicesRange * sizeof(double));
